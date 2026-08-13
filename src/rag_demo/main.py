@@ -44,36 +44,43 @@ class SearchResult(BaseModel):
     distance: float
 
 
-def _search(search_query_en: str, top_k: int, model_key: str) -> list[SearchResult]:
+def _search(search_query: str, top_k: int, model_key: str) -> list[SearchResult]:
     table_name = EMBEDDING_MODELS[model_key].table_name
-    query_embedding = embed_query(search_query_en, model_key)
-    with get_connection() as conn:
-        rows = conn.execute(
-            f"""
-            SELECT doc_id, chunk_index, content, metadata, embedding <=> %s AS distance
-            FROM {table_name}
-            ORDER BY distance
-            LIMIT %s
-            """,
-            (query_embedding, top_k),
-        ).fetchall()
 
-    return [
-        SearchResult(
-            doc_id=row[0],
-            chunk_index=row[1],
-            content=row[2],
-            metadata=row[3],
-            distance=row[4],
-        )
-        for row in rows
-    ]
+    search_query_en = translate_query_to_english(search_query)
+    queries = {search_query}
+    queries.add(search_query_en)
+
+    candidates: dict[tuple[str, int], SearchResult] = {}
+    with get_connection() as conn:
+        for query_text in queries:
+            query_embedding = embed_query(query_text, model_key)
+            rows = conn.execute(
+                f"""
+                SELECT doc_id, chunk_index, content, metadata, embedding <=> %s AS distance
+                FROM {table_name}
+                ORDER BY distance
+                LIMIT %s
+                """,
+                (query_embedding, top_k),
+            ).fetchall()
+            for row in rows:
+                key = (row[0], row[1])
+                if key not in candidates or row[4] < candidates[key].distance:
+                    candidates[key] = SearchResult(
+                        doc_id=row[0],
+                        chunk_index=row[1],
+                        content=row[2],
+                        metadata=row[3],
+                        distance=row[4],
+                    )
+
+    return sorted(candidates.values(), key=lambda r: r.distance)[:top_k]
 
 
 @app.post("/search")
 async def search(request: SearchRequest) -> list[SearchResult]:
-    search_query = translate_query_to_english(request.query)
-    return _search(search_query, request.top_k, request.model)
+    return _search(request.query, request.top_k, request.model)
 
 
 class AskResponse(BaseModel):
@@ -83,8 +90,7 @@ class AskResponse(BaseModel):
 
 @app.post("/ask")
 async def ask(request: SearchRequest) -> AskResponse:
-    search_query = translate_query_to_english(request.query)
-    sources = _search(search_query, request.top_k, request.model)
+    sources = _search(request.query, request.top_k, request.model)
     answer = generate_answer(request.query, [s.content for s in sources])
     return AskResponse(answer=answer, sources=sources)
 
@@ -106,10 +112,9 @@ class CompareResponse(BaseModel):
 
 @app.post("/compare")
 async def compare(request: CompareRequest) -> CompareResponse:
-    search_query = translate_query_to_english(request.query)
     results = []
     for model_key in EMBEDDING_MODELS:
-        sources = _search(search_query, request.top_k, model_key)
+        sources = _search(request.query, request.top_k, model_key)
         answer = generate_answer(request.query, [s.content for s in sources])
         results.append(ModelResult(model=model_key, answer=answer, sources=sources))
     return CompareResponse(results=results)
