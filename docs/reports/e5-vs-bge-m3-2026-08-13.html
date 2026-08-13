@@ -1,0 +1,422 @@
+<title>E5 vs BGE-M3</title>
+<style>
+  .rr {
+    color-scheme: light;
+    --page:        #f9f9f7;
+    --surface:     #fcfcfb;
+    --surface-2:   #f3f2ee;
+    --text-1:      #0b0b0b;
+    --text-2:      #52514e;
+    --muted:       #898781;
+    --grid:        #e1e0d9;
+    --border:      rgba(11,11,11,0.10);
+    --series-e5:   #2a78d6;
+    --series-e5-fill: #2a78d61a;
+    --series-m3:   #eb6834;
+    --series-m3-fill: #eb68341a;
+    --good:        #006300;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) .rr {
+      color-scheme: dark;
+      --page:        #0d0d0d;
+      --surface:     #1a1a19;
+      --surface-2:   #202020;
+      --text-1:      #ffffff;
+      --text-2:      #c3c2b7;
+      --muted:       #898781;
+      --grid:        #2c2c2a;
+      --border:      rgba(255,255,255,0.10);
+      --series-e5:   #3987e5;
+      --series-e5-fill: #3987e526;
+      --series-m3:   #d95926;
+      --series-m3-fill: #d9592626;
+      --good:        #0ca30c;
+    }
+  }
+  :root[data-theme="dark"] .rr {
+    color-scheme: dark;
+    --page:        #0d0d0d;
+    --surface:     #1a1a19;
+    --surface-2:   #202020;
+    --text-1:      #ffffff;
+    --text-2:      #c3c2b7;
+    --muted:       #898781;
+    --grid:        #2c2c2a;
+    --border:      rgba(255,255,255,0.10);
+    --series-e5:   #3987e5;
+    --series-e5-fill: #3987e526;
+    --series-m3:   #d95926;
+    --series-m3-fill: #d9592626;
+    --good:        #0ca30c;
+  }
+
+  .rr {
+    background: var(--page);
+    color: var(--text-1);
+    font-family: system-ui, -apple-system, "Segoe UI", "Malgun Gothic", sans-serif;
+    padding: 56px 24px 80px;
+    box-sizing: border-box;
+  }
+  .rr * { box-sizing: border-box; }
+  .rr .wrap { max-width: 860px; margin: 0 auto; display: flex; flex-direction: column; gap: 40px; }
+
+  .rr .mono { font-family: ui-monospace, "SFMono-Regular", "Consolas", "Cascadia Code", monospace; }
+  .rr .tnum { font-variant-numeric: tabular-nums; }
+
+  /* header */
+  .rr header { display: flex; flex-direction: column; gap: 10px; border-bottom: 1px solid var(--border); padding-bottom: 28px; }
+  .rr .eyebrow {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--series-e5); font-family: ui-monospace, monospace;
+  }
+  .rr h1 { font-size: 32px; line-height: 1.15; font-weight: 800; margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
+  .rr .sub { font-size: 15px; color: var(--text-2); margin: 0; max-width: 62ch; line-height: 1.55; }
+  .rr .meta { display: flex; gap: 18px; flex-wrap: wrap; font-size: 12.5px; color: var(--muted); font-family: ui-monospace, monospace; }
+  .rr .meta span { display: flex; align-items: center; gap: 6px; }
+
+  /* section */
+  .rr section { display: flex; flex-direction: column; gap: 16px; }
+  .rr .section-title { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+  .rr h2 { font-size: 13px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-1); margin: 0; }
+  .rr .section-note { font-size: 12.5px; color: var(--muted); }
+
+  /* stat tiles */
+  .rr .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .rr .stat {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 16px 18px; display: flex; flex-direction: column; gap: 6px;
+  }
+  .rr .stat .label { font-size: 11.5px; color: var(--muted); font-weight: 600; letter-spacing: 0.02em; }
+  .rr .stat .value { font-size: 26px; font-weight: 800; line-height: 1; }
+  .rr .stat .value.e5 { color: var(--series-e5); }
+  .rr .stat .value.m3 { color: var(--series-m3); }
+  .rr .stat .foot { font-size: 12px; color: var(--text-2); }
+
+  /* legend */
+  .rr .legend { display: flex; gap: 16px; font-size: 12.5px; color: var(--text-2); }
+  .rr .legend .item { display: flex; align-items: center; gap: 6px; }
+  .rr .legend .swatch { width: 10px; height: 10px; border-radius: 2px; }
+
+  /* chart */
+  .rr .chart-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 20px 20px 8px; overflow-x: auto;
+  }
+  .rr .chart-inner { min-width: 620px; }
+  .rr svg text { font-family: ui-monospace, monospace; fill: var(--muted); }
+  .rr .bar { cursor: pointer; transition: opacity 0.12s ease; }
+  .rr .bar:hover { opacity: 0.82; }
+  .rr .cat-label { font-size: 11px; fill: var(--text-2); font-family: system-ui, -apple-system, "Malgun Gothic", sans-serif; }
+  .rr .axis-label { font-size: 10.5px; }
+  .rr .gridline { stroke: var(--grid); stroke-width: 1; }
+  .rr .baseline { stroke: var(--muted); stroke-width: 1; }
+
+  .rr #tooltip {
+    position: absolute; pointer-events: none; opacity: 0; transition: opacity 0.1s ease;
+    background: var(--text-1); color: var(--page); font-size: 12px; font-family: ui-monospace, monospace;
+    padding: 6px 9px; border-radius: 6px; white-space: nowrap; z-index: 5; transform: translate(-50%, -100%);
+  }
+
+  /* table */
+  .rr .table-scroll { overflow-x: auto; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+  .rr table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 720px; }
+  .rr th { text-align: left; font-size: 11px; letter-spacing: 0.03em; text-transform: uppercase; color: var(--muted); font-weight: 600; padding: 10px 14px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  .rr td { padding: 11px 14px; border-bottom: 1px solid var(--border); color: var(--text-1); vertical-align: top; }
+  .rr tr:last-child td { border-bottom: none; }
+  .rr td.q { color: var(--text-2); max-width: 260px; font-size: 12.5px; line-height: 1.4; }
+  .rr td.num { text-align: right; }
+  .rr .winner { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 700; padding: 2px 8px; border-radius: 20px; }
+  .rr .winner.e5 { color: var(--series-e5); background: var(--series-e5-fill); }
+  .rr .winner.m3 { color: var(--series-m3); background: var(--series-m3-fill); }
+  .rr .dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+  .rr .dot.e5 { background: var(--series-e5); }
+  .rr .dot.m3 { background: var(--series-m3); }
+
+  /* sample answers */
+  .rr .samples { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .rr .sample {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .rr .sample .who { font-size: 11px; font-weight: 700; letter-spacing: 0.04em; display: flex; align-items: center; gap: 6px; }
+  .rr .sample .dist { margin-left: auto; font-family: ui-monospace, monospace; font-weight: 400; color: var(--muted); font-size: 11.5px; }
+  .rr .sample p { margin: 0; font-size: 13px; line-height: 1.6; color: var(--text-2); }
+  .rr .sample .q { font-size: 12px; color: var(--muted); border-left: 2px solid var(--border); padding-left: 10px; margin-bottom: 2px; }
+
+  /* notes */
+  .rr .notes { background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; display: flex; flex-direction: column; gap: 10px; }
+  .rr .notes ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 8px; }
+  .rr .notes li { font-size: 13px; line-height: 1.6; color: var(--text-2); }
+  .rr .notes b { color: var(--text-1); }
+
+  .rr footer { font-size: 11.5px; color: var(--muted); font-family: ui-monospace, monospace; padding-top: 8px; border-top: 1px solid var(--border); }
+
+  @media (max-width: 640px) {
+    .rr .stats { grid-template-columns: 1fr; }
+    .rr .samples { grid-template-columns: 1fr; }
+  }
+</style>
+
+<div class="rr">
+  <div class="wrap">
+
+    <header>
+      <div class="eyebrow">RAG retrieval benchmark</div>
+      <h1>E5가 BGE-M3보다 8개 질의 전부에서<br/>더 낮은 distance를 기록했습니다</h1>
+      <p class="sub">
+        반려견 수의학 QA 데이터셋(AI-Hub 라벨링 데이터 + HuggingFace 데이터셋)에 대해
+        <span class="mono">/compare</span> 엔드포인트로 동일 질의를 두 임베딩 모델에 던져
+        코사인 거리(distance)를 비교했습니다. 값이 낮을수록 더 유사한 문서를 찾았다는 뜻입니다.
+      </p>
+      <div class="meta">
+        <span>date · 2026-08-13</span>
+        <span>queries · 8</span>
+        <span>top_k · 3</span>
+        <span>metric · cosine distance (pgvector <span class="mono">&lt;=&gt;</span>)</span>
+      </div>
+    </header>
+
+    <section>
+      <div class="stats">
+        <div class="stat">
+          <span class="label">평균 최상위 distance — e5</span>
+          <span class="value e5 tnum">0.0834</span>
+          <span class="foot">multilingual-e5-base · query/passage 프리픽스 적용</span>
+        </div>
+        <div class="stat">
+          <span class="label">평균 최상위 distance — bge-m3</span>
+          <span class="value m3 tnum">0.2078</span>
+          <span class="foot">BAAI/bge-m3 · 프리픽스 미적용</span>
+        </div>
+        <div class="stat">
+          <span class="label">e5 우세 비율</span>
+          <span class="value tnum">8 / 8</span>
+          <span class="foot">테스트한 8개 질의 전부에서 e5의 distance가 더 낮음</span>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-title">
+        <h2>질의별 최상위 distance</h2>
+        <div class="legend">
+          <span class="item"><span class="swatch" style="background:var(--series-e5)"></span>e5</span>
+          <span class="item"><span class="swatch" style="background:var(--series-m3)"></span>bge-m3</span>
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-inner">
+          <svg id="chart" width="100%" viewBox="0 0 760 300" role="img" aria-label="질의별 e5와 bge-m3의 최상위 distance 비교 막대그래프"></svg>
+        </div>
+      </div>
+      <p class="section-note">막대가 낮을수록(0에 가까울수록) 더 유사한 문서를 찾았다는 뜻입니다. 막대 위에 마우스를 올리면 정확한 수치가 표시됩니다.</p>
+    </section>
+
+    <section>
+      <h2>상세 데이터</h2>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>분류</th>
+              <th>질의</th>
+              <th class="num">e5 top</th>
+              <th class="num">bge-m3 top</th>
+              <th class="num">차이(Δ)</th>
+              <th>우세</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>독성 · 포도</td>
+              <td class="q">강아지가 포도를 먹었는데 신부전 위험이 있나요?</td>
+              <td class="num tnum">0.0795</td>
+              <td class="num tnum">0.1948</td>
+              <td class="num tnum">0.1153</td>
+              <td><span class="winner e5"><span class="dot e5"></span>e5</span></td>
+            </tr>
+            <tr>
+              <td>독성 · 초콜릿</td>
+              <td class="q">강아지가 초콜릿을 먹으면 왜 위험한가요?</td>
+              <td class="num tnum">0.0730</td>
+              <td class="num tnum">0.1912</td>
+              <td class="num tnum">0.1182</td>
+              <td><span class="winner e5"><span class="dot e5"></span>e5</span></td>
+            </tr>
+            <tr>
+              <td>안과</td>
+              <td class="q">강아지 눈꼽이 많이 끼고 충혈되는데 어떤 병일 수 있나요?</td>
+              <td class="num tnum">0.0946</td>
+              <td class="num tnum">0.2233</td>
+              <td class="num tnum">0.1287</td>
+              <td><span class="winner e5"><span class="dot e5"></span>e5</span></td>
+            </tr>
+            <tr>
+              <td>외과 · 슬개골</td>
+              <td class="q">강아지가 뒷다리를 절뚝거리는데 슬개골 탈구 증상인가요?</td>
+              <td class="num tnum">0.0628</td>
+              <td class="num tnum">0.1824</td>
+              <td class="num tnum">0.1196</td>
+              <td><span class="winner e5"><span class="dot e5"></span>e5</span></td>
+            </tr>
+            <tr>
+              <td>치과</td>
+              <td class="q">강아지 잇몸이 붓고 입냄새가 심한데 원인이 뭘까요?</td>
+              <td class="num tnum">0.0904</td>
+              <td class="num tnum">0.2605</td>
+              <td class="num tnum">0.1701</td>
+              <td><span class="winner e5"><span class="dot e5"></span>e5</span></td>
+            </tr>
+            <tr>
+              <td>피부과</td>
+              <td class="q">강아지가 피부를 계속 긁고 발진이 생겼어요</td>
+              <td class="num tnum">0.0884</td>
+              <td class="num tnum">0.2221</td>
+              <td class="num tnum">0.1337</td>
+              <td><span class="winner e5"><span class="dot e5"></span>e5</span></td>
+            </tr>
+            <tr>
+              <td>예방접종</td>
+              <td class="q">강아지 예방접종은 언제부터 시작해야 하나요?</td>
+              <td class="num tnum">0.0708</td>
+              <td class="num tnum">0.1918</td>
+              <td class="num tnum">0.1210</td>
+              <td><span class="winner e5"><span class="dot e5"></span>e5</span></td>
+            </tr>
+            <tr>
+              <td>영어 질의</td>
+              <td class="q">Is it dangerous for dogs to eat chocolate?</td>
+              <td class="num tnum">0.1074</td>
+              <td class="num tnum">0.1963</td>
+              <td class="num tnum">0.0890</td>
+              <td><span class="winner e5"><span class="dot e5"></span>e5</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="section-note">Δ(차이)가 가장 작은 케이스는 영어 질의(0.089) — e5의 우위가 다국어 질의에서는 다소 줄어듭니다.</p>
+    </section>
+
+    <section>
+      <h2>답변 품질 샘플 — 치과 (Δ가 가장 큰 케이스)</h2>
+      <div class="samples">
+        <div class="sample">
+          <div class="who" style="color:var(--series-e5)"><span class="dot e5"></span>e5<span class="dist">distance 0.0904</span></div>
+          <p>강아지의 잇몸이 붓고 입냄새가 심한 것은 구강 내 문제, 특히 치주염이나 치석이 원인일 수 있습니다. 이러한 증상은 구강 건강에 문제가 있음을 나타내며, 가까운 동물병원에서 구강 검진을 받는 것이 중요합니다.</p>
+        </div>
+        <div class="sample">
+          <div class="who" style="color:var(--series-m3)"><span class="dot m3"></span>bge-m3<span class="dist">distance 0.2605</span></div>
+          <p>강아지의 잇몸이 붓고 입냄새가 심한 것은 주로 치주 질환이나 치아 감염과 같은 구강 내 문제로 인해 발생할 수 있습니다. 잇몸의 염증은 세균이 쌓여서 생기는 경우가 많으며, 이로 인해 불쾌한 냄새가 발생할 수 있습니다.</p>
+        </div>
+      </div>
+      <p class="section-note">distance는 5배 이상 차이 나지만, 두 모델 모두 같은 원인(치주 질환)을 정확히 짚어냈습니다 — 아래 <b style="color:var(--text-1)">해석 시 주의할 점</b> 참고.</p>
+    </section>
+
+    <section>
+      <h2>해석 시 주의할 점</h2>
+      <div class="notes">
+        <ul>
+          <li><b>절대값을 모델 간에 직접 비교하지 마세요.</b> e5는 <span class="mono">query:</span>/<span class="mono">passage:</span> 프리픽스를 붙여 학습된 비대칭 검색 전용 모델이라 관련 쌍의 거리가 원래 더 촘촘하게(0에 가깝게) 모입니다. bge-m3는 프리픽스 없이 범용으로 임베딩하므로 같은 정도로 관련 있어도 거리값 자체가 더 크게 나오는 경향이 있습니다. 즉 이번 결과는 "e5가 5배 더 정확하다"가 아니라 <b>두 모델의 거리 분포 스케일이 다르다</b>는 뜻에 더 가깝습니다.</li>
+          <li><b>실제 검색 관련성은 비슷했습니다.</b> 8개 질의 모두에서 두 모델이 찾은 문서와 생성된 답변의 핵심 내용(원인·처치)은 동일했습니다 — 위 치과 샘플 참고.</li>
+          <li><b>e5의 우위는 다국어 질의에서 좁혀집니다.</b> 영어 질의의 Δ(0.089)가 8개 중 가장 작았습니다 — 표본이 1건뿐이라 단정하긴 이르지만, bge-m3가 다국어 범용 모델로 설계된 점과 방향이 일치합니다.</li>
+          <li><b>샘플 크기가 작습니다.</b> 8개 질의는 각 진료과(내과/안과/외과/치과/피부과)를 1~2개씩만 다룬 것으로, 임계값(threshold)을 정하거나 최종 모델을 확정하기엔 표본이 더 필요합니다.</li>
+        </ul>
+      </div>
+    </section>
+
+    <footer>generated via /compare · top_k=3 · rag-demo · claude code</footer>
+  </div>
+</div>
+
+<div id="tooltip"></div>
+
+<script>
+(function () {
+  var data = [
+    { label: "포도",     e5: 0.07946, m3: 0.19480 },
+    { label: "초콜릿",   e5: 0.07302, m3: 0.19120 },
+    { label: "안과",     e5: 0.09461, m3: 0.22331 },
+    { label: "슬개골",   e5: 0.06284, m3: 0.18242 },
+    { label: "치과",     e5: 0.09036, m3: 0.26050 },
+    { label: "피부과",   e5: 0.08842, m3: 0.22211 },
+    { label: "예방접종", e5: 0.07081, m3: 0.19181 },
+    { label: "영어",     e5: 0.10735, m3: 0.19631 }
+  ];
+
+  var svg = document.getElementById("chart");
+  var ns = "http://www.w3.org/2000/svg";
+  var W = 760, H = 300;
+  var plotTop = 14, plotBottom = 240, plotLeft = 40, plotRight = 20;
+  var plotH = plotBottom - plotTop;
+  var plotW = W - plotLeft - plotRight;
+  var yMax = 0.30;
+
+  function y(v) { return plotBottom - (v / yMax) * plotH; }
+
+  var css = getComputedStyle(document.querySelector(".rr"));
+  var colE5 = css.getPropertyValue("--series-e5").trim();
+  var colM3 = css.getPropertyValue("--series-m3").trim();
+
+  function el(tag, attrs) {
+    var e = document.createElementNS(ns, tag);
+    for (var k in attrs) e.setAttribute(k, attrs[k]);
+    return e;
+  }
+
+  // gridlines + y ticks
+  var ticks = [0, 0.05, 0.10, 0.15, 0.20, 0.25, 0.30];
+  ticks.forEach(function (t) {
+    svg.appendChild(el("line", { class: "gridline", x1: plotLeft, x2: W - plotRight, y1: y(t), y2: y(t) }));
+    var lbl = el("text", { class: "axis-label", x: plotLeft - 8, y: y(t) + 3, "text-anchor": "end" });
+    lbl.textContent = t.toFixed(2);
+    svg.appendChild(lbl);
+  });
+  svg.appendChild(el("line", { class: "baseline", x1: plotLeft, x2: W - plotRight, y1: plotBottom, y2: plotBottom }));
+
+  var groupW = plotW / data.length;
+  var barW = 24, gap = 6;
+
+  function roundedTopPath(x, yTop, w, h, r) {
+    var yBot = yTop + h;
+    if (h < r) r = h;
+    return "M" + x + "," + (yTop + r) +
+      " Q" + x + "," + yTop + " " + (x + r) + "," + yTop +
+      " L" + (x + w - r) + "," + yTop +
+      " Q" + (x + w) + "," + yTop + " " + (x + w) + "," + (yTop + r) +
+      " L" + (x + w) + "," + yBot +
+      " L" + x + "," + yBot + " Z";
+  }
+
+  var tooltip = document.getElementById("tooltip");
+  var chartCard = document.querySelector(".chart-card");
+
+  function addBar(x, w, value, color, label, series) {
+    var h = (value / yMax) * plotH;
+    var top = plotBottom - h;
+    var path = el("path", { class: "bar", d: roundedTopPath(x, top, w, h, 4), fill: color });
+    svg.appendChild(path);
+    path.addEventListener("mousemove", function (ev) {
+      var rect = chartCard.getBoundingClientRect();
+      tooltip.style.left = (ev.clientX - rect.left + chartCard.scrollLeft) + "px";
+      tooltip.style.top = (ev.clientY - rect.top - 10) + "px";
+      tooltip.style.opacity = 1;
+      tooltip.textContent = label + " · " + series + " · " + value.toFixed(4);
+    });
+    path.addEventListener("mouseleave", function () { tooltip.style.opacity = 0; });
+  }
+
+  data.forEach(function (d, i) {
+    var gx = plotLeft + i * groupW;
+    var pairW = barW * 2 + gap;
+    var startX = gx + (groupW - pairW) / 2;
+
+    addBar(startX, barW, d.e5, colE5, d.label, "e5");
+    addBar(startX + barW + gap, barW, d.m3, colM3, d.label, "bge-m3");
+
+    var lbl = el("text", { class: "cat-label", x: gx + groupW / 2, y: plotBottom + 20, "text-anchor": "middle" });
+    lbl.textContent = d.label;
+    svg.appendChild(lbl);
+  });
+})();
+</script>
