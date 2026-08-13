@@ -9,9 +9,24 @@ type SearchResult = {
   doc_id: string;
   chunk_index: number;
   content: string;
-  metadata: { question?: string; [key: string]: unknown };
+  metadata: { question?: string; source?: string; [key: string]: unknown };
   distance: number;
 };
+
+function sourceBadge(source: unknown): { label: string; className: string } {
+  if (typeof source === "string" && source.startsWith("aihub")) {
+    return {
+      label: "AI-Hub",
+      className:
+        "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300",
+    };
+  }
+  return {
+    label: "HuggingFace",
+    className:
+      "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
+  };
+}
 
 type AskResponse = {
   answer: string;
@@ -91,22 +106,32 @@ function SearchColumn({
       )}
 
       <ul className="flex flex-col gap-3">
-        {results.map((r) => (
-          <li
-            key={`${r.doc_id}-${r.chunk_index}`}
-            className="rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900"
-          >
-            {r.metadata?.question && (
-              <p className="mb-1 text-xs font-medium text-zinc-500">
-                원본 질문: {String(r.metadata.question)}
+        {results.map((r) => {
+          const badge = sourceBadge(r.metadata?.source);
+          return (
+            <li
+              key={`${r.doc_id}-${r.chunk_index}`}
+              className="rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900"
+            >
+              <div className="mb-1 flex items-center gap-2">
+                <span
+                  className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${badge.className}`}
+                >
+                  {badge.label}
+                </span>
+                {r.metadata?.question && (
+                  <p className="text-xs font-medium text-zinc-500">
+                    원본 질문: {String(r.metadata.question)}
+                  </p>
+                )}
+              </div>
+              <p className="text-sm text-black dark:text-zinc-50">{r.content}</p>
+              <p className="mt-2 text-xs text-zinc-400">
+                distance: {r.distance.toFixed(4)}
               </p>
-            )}
-            <p className="text-sm text-black dark:text-zinc-50">{r.content}</p>
-            <p className="mt-2 text-xs text-zinc-400">
-              distance: {r.distance.toFixed(4)}
-            </p>
-          </li>
-        ))}
+            </li>
+          );
+        })}
       </ul>
 
       {!loading && !error && results.length === 0 && (

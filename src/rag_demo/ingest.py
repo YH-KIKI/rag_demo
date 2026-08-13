@@ -71,13 +71,14 @@ def main() -> None:
                 continue
 
             other_fields = {k: v for k, v in row.items() if k != text_column}
+            metadata = {**other_fields, "source": "huggingface"}
             for chunk_index, chunk in enumerate(chunk_text(text)):
                 pending_rows.append(
                     {
                         "doc_id": str(row_index),
                         "chunk_index": chunk_index,
                         "content": chunk,
-                        "metadata": other_fields,
+                        "metadata": metadata,
                     }
                 )
 
