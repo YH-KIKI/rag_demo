@@ -33,6 +33,18 @@ type AskResponse = {
   sources: SearchResult[];
 };
 
+function renderContent(content: string) {
+  const idx = content.indexOf("답변:");
+  if (idx <= 0) return content;
+  return (
+    <>
+      {content.slice(0, idx).trim()}
+      <br />
+      {content.slice(idx)}
+    </>
+  );
+}
+
 function SearchColumn({
   model,
   label,
@@ -125,7 +137,7 @@ function SearchColumn({
                   </p>
                 )}
               </div>
-              <p className="text-sm text-black dark:text-zinc-50">{r.content}</p>
+              <p className="text-sm text-black dark:text-zinc-50">{renderContent(r.content)}</p>
               <p className="mt-2 text-xs text-zinc-400">
                 distance: {r.distance.toFixed(4)}
               </p>
