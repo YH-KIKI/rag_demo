@@ -1,0 +1,264 @@
+<title>리포트 용어 설명</title>
+<style>
+  .gl {
+    color-scheme: light;
+    --page:        #f9f9f7;
+    --surface:     #fcfcfb;
+    --surface-2:   #f3f2ee;
+    --text-1:      #0b0b0b;
+    --text-2:      #52514e;
+    --muted:       #898781;
+    --grid:        #e1e0d9;
+    --border:      rgba(11,11,11,0.10);
+    --series-e5:   #2a78d6;
+    --series-e5-fill: #2a78d61a;
+    --series-m3:   #eb6834;
+    --series-m3-fill: #eb68341a;
+    --good:        #006300;
+    --good-fill:   #0063001a;
+    --bad:         #a33b12;
+    --bad-fill:    #a33b121a;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) .gl {
+      color-scheme: dark;
+      --page:        #0d0d0d;
+      --surface:     #1a1a19;
+      --surface-2:   #202020;
+      --text-1:      #ffffff;
+      --text-2:      #c3c2b7;
+      --muted:       #898781;
+      --grid:        #2c2c2a;
+      --border:      rgba(255,255,255,0.10);
+      --series-e5:   #3987e5;
+      --series-e5-fill: #3987e526;
+      --series-m3:   #d95926;
+      --series-m3-fill: #d9592626;
+      --good:        #0ca30c;
+      --good-fill:   #0ca30c26;
+      --bad:         #e2703e;
+      --bad-fill:    #e2703e26;
+    }
+  }
+  :root[data-theme="dark"] .gl {
+    color-scheme: dark;
+    --page:        #0d0d0d;
+    --surface:     #1a1a19;
+    --surface-2:   #202020;
+    --text-1:      #ffffff;
+    --text-2:      #c3c2b7;
+    --muted:       #898781;
+    --grid:        #2c2c2a;
+    --border:      rgba(255,255,255,0.10);
+    --series-e5:   #3987e5;
+    --series-e5-fill: #3987e526;
+    --series-m3:   #d95926;
+    --series-m3-fill: #d9592626;
+    --good:        #0ca30c;
+    --good-fill:   #0ca30c26;
+    --bad:         #e2703e;
+    --bad-fill:    #e2703e26;
+  }
+
+  .gl {
+    background: var(--page);
+    color: var(--text-1);
+    font-family: system-ui, -apple-system, "Segoe UI", "Malgun Gothic", sans-serif;
+    padding: 56px 24px 80px;
+    box-sizing: border-box;
+  }
+  .gl * { box-sizing: border-box; }
+  .gl .wrap { max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; gap: 44px; }
+  .gl .mono { font-family: ui-monospace, "SFMono-Regular", "Consolas", "Cascadia Code", monospace; }
+  .gl .tnum { font-variant-numeric: tabular-nums; }
+
+  .gl header { display: flex; flex-direction: column; gap: 10px; border-bottom: 1px solid var(--border); padding-bottom: 28px; }
+  .gl .eyebrow { font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--series-e5); font-family: ui-monospace, monospace; }
+  .gl h1 { font-size: 30px; line-height: 1.25; font-weight: 800; margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
+  .gl .sub { font-size: 15px; color: var(--text-2); margin: 0; max-width: 62ch; line-height: 1.6; }
+
+  .gl .toc { display: flex; flex-wrap: wrap; gap: 8px; }
+  .gl .toc a {
+    font-size: 12.5px; font-family: ui-monospace, monospace; color: var(--text-2);
+    background: var(--surface); border: 1px solid var(--border); border-radius: 20px;
+    padding: 6px 12px; text-decoration: none;
+  }
+  .gl .toc a:hover { border-color: var(--series-e5); color: var(--series-e5); }
+
+  .gl .term { display: flex; flex-direction: column; gap: 14px; scroll-margin-top: 24px; }
+  .gl .term-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .gl .term-no { font-family: ui-monospace, monospace; font-size: 12px; color: var(--muted); }
+  .gl h2 { font-size: 19px; font-weight: 800; margin: 0; letter-spacing: -0.005em; }
+  .gl h2 .en { font-family: ui-monospace, monospace; font-size: 13px; font-weight: 500; color: var(--muted); margin-left: 8px; }
+
+  .gl .def {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 16px 18px; font-size: 14px; line-height: 1.7; color: var(--text-1);
+  }
+  .gl .def b { color: var(--series-e5); }
+
+  .gl .example {
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px;
+    padding: 16px 18px; display: flex; flex-direction: column; gap: 10px;
+  }
+  .gl .example .ex-label { font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); }
+  .gl .example p { margin: 0; font-size: 13.5px; line-height: 1.65; color: var(--text-2); }
+  .gl .example .real { font-size: 13.5px; color: var(--text-1); }
+  .gl .example .real .mono { color: var(--series-e5); font-weight: 700; }
+
+  /* rank illustration */
+  .gl .ranks { display: flex; gap: 6px; flex-wrap: wrap; }
+  .gl .rank-cell {
+    width: 34px; height: 34px; border-radius: 7px; display: flex; align-items: center; justify-content: center;
+    font-family: ui-monospace, monospace; font-size: 12px; font-weight: 700; border: 1px solid var(--border);
+    background: var(--surface); color: var(--muted);
+  }
+  .gl .rank-cell.hit { background: var(--good-fill); color: var(--good); border-color: var(--good); }
+  .gl .rank-caption { font-size: 11.5px; color: var(--muted); font-family: ui-monospace, monospace; }
+
+  /* worked example table */
+  .gl .table-scroll { overflow-x: auto; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+  .gl table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 480px; }
+  .gl th { text-align: left; font-size: 10.5px; letter-spacing: 0.03em; text-transform: uppercase; color: var(--muted); font-weight: 600; padding: 9px 12px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  .gl td { padding: 10px 12px; border-bottom: 1px solid var(--border); color: var(--text-1); }
+  .gl tr:last-child td { border-bottom: none; }
+  .gl td.num { text-align: right; font-family: ui-monospace, monospace; }
+  .gl .miss { color: var(--muted); font-style: italic; }
+
+  .gl .callout {
+    display: flex; gap: 12px; background: var(--series-e5-fill); border: 1px solid var(--series-e5); border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .gl .callout .icon { font-family: ui-monospace, monospace; font-weight: 800; color: var(--series-e5); }
+  .gl .callout p { margin: 0; font-size: 13.5px; line-height: 1.65; color: var(--text-1); }
+  .gl .callout b { color: var(--series-e5); }
+
+  .gl footer { font-size: 11.5px; color: var(--muted); font-family: ui-monospace, monospace; padding-top: 8px; border-top: 1px solid var(--border); }
+
+  @media (max-width: 560px) {
+    .gl h1 { font-size: 25px; }
+  }
+</style>
+
+<div class="gl">
+  <div class="wrap">
+
+    <header>
+      <div class="eyebrow">용어 설명 · 2026-08-18 리포트 동반 문서</div>
+      <h1>이 숫자들, 무슨 뜻일까요</h1>
+      <p class="sub">
+        <span class="mono">retrieval-eval-2026-08-18</span> 리포트에 나온 Recall@k, MRR, Not found rate 같은
+        용어를 실제 숫자와 함께 하나씩 풀어서 설명합니다. 이 문서는 이번 한 번만 참고하는 용도이고,
+        앞으로 반복 생성될 리포트에는 이 설명 없이 숫자만 나옵니다.
+      </p>
+      <div class="toc">
+        <a href="#chunk">① 청크 · 정답 라벨</a>
+        <a href="#recall">② Recall@k</a>
+        <a href="#mrr">③ MRR</a>
+        <a href="#notfound">④ Not found rate</a>
+        <a href="#latency">⑤ 쿼리 지연시간</a>
+        <a href="#sample">⑥ 샘플 수 · seed</a>
+      </div>
+    </header>
+
+    <section class="term" id="chunk">
+      <div class="term-head"><span class="term-no">①</span><h2>청크 · 정답 라벨<span class="en">chunk / gold label</span></h2></div>
+      <div class="def">
+        문서 하나를 통째로 검색하면 너무 기니까, <b>일정 길이로 잘라놓은 조각</b>을 "청크"라고 불러요.
+        예를 들어 QA 데이터 하나가 <span class="mono">doc_id=aihub_qa_123</span>, <span class="mono">chunk_index=0</span>처럼
+        쪼개져 저장돼요. 평가에서는 "이 질문의 원래 출처였던 그 청크"를 <b>정답(gold)</b>으로 두고,
+        검색 결과 안에 그 청크가 몇 번째로 나오는지를 채점 기준으로 삼습니다.
+      </div>
+      <div class="callout">
+        <span class="icon">!</span>
+        <p>정답이 사람이 하나하나 확인해서 만든 게 아니라, "이 질문은 원래 이 청크에서 나왔다"는 데이터셋 구조를 그대로 쓴 거예요. 그래서 실제 사용자 질문과는 문체나 표현이 다를 수 있다는 한계가 있습니다.</p>
+      </div>
+    </section>
+
+    <section class="term" id="recall">
+      <div class="term-head"><span class="term-no">②</span><h2>Recall@k<span class="en">= Hit Rate@k</span></h2></div>
+      <div class="def">
+        질문을 검색했을 때, <b>정답 청크가 상위 k개 결과 안에 들어있었는지</b>를 비율로 나타낸 지표예요.
+        예를 들어 Recall@3 = 68%라면, 300개 질문 중 68%는 검색 결과 top 3 안에 정답이 있었다는 뜻입니다.
+        k가 커질수록(더 많이 보여줄수록) 값이 커지는 게 당연해요 — 그래서 항상 k를 같이 표기합니다.
+      </div>
+      <div class="example">
+        <span class="ex-label">랭크(순위)로 이해하기 — 정답이 몇 번째에 나왔나</span>
+        <div class="ranks">
+          <div class="rank-cell hit">1</div>
+          <div class="rank-cell">4</div>
+          <div class="rank-cell hit">2</div>
+          <div class="rank-cell">-</div>
+          <div class="rank-cell hit">1</div>
+        </div>
+        <p class="rank-caption">숫자 = 정답이 나온 순위, "-" = top-20 안에 아예 없음(not found)</p>
+        <p>
+          이 5개 질문 예시로 보면, 순위가 1 이하인 질문은 Q1·Q5 두 개라 Recall@1 = 2/5 = <b class="real">40%</b>.
+          순위가 3 이하(1, 2, 3위 중 하나)인 질문은 Q1(1위)·Q3(2위)·Q5(1위) 세 개라 Recall@3 = 3/5 = <b class="real">60%</b>.
+          Q2(4위)는 top-3 밖이라 빠지고, Q4는 애초에 못 찾았으니(not found) 둘 다 제외됩니다.
+        </p>
+        <p class="real">300개 질문으로 확장한 실제 결과 → e5 Recall@3 = <span class="mono">68.0%</span>, bge-m3 = <span class="mono">66.7%</span></p>
+      </div>
+      <div class="callout">
+        <span class="icon">=</span>
+        <p><b>이번 평가에서는 Hit Rate@k와 Recall@k가 같은 값</b>이에요. 정답이 질문 하나당 딱 1개뿐이라(청크 1개), "찾았다/못 찾았다"만 있는 이진 채점이라서 그래요. 정답이 여러 개일 수 있는 상황에서만 두 지표가 갈라집니다.</p>
+      </div>
+    </section>
+
+    <section class="term" id="mrr">
+      <div class="term-head"><span class="term-no">③</span><h2>MRR@20<span class="en">Mean Reciprocal Rank</span></h2></div>
+      <div class="def">
+        Recall@k는 "top-k 안에 있었나"만 보고 몇 번째인지는 신경 안 써요. MRR은 <b>정답이 몇 번째에 나왔는지까지</b> 반영합니다.
+        질문마다 <span class="mono">1 ÷ 순위</span>를 계산해서 평균을 낸 값이에요. 정답을 1순위로 바로 찾으면 1점,
+        2순위면 0.5점, 4순위면 0.25점, top-20 안에도 없으면 0점 — 이걸 300개 질문에 대해 평균 낸 게 MRR@20입니다.
+      </div>
+      <div class="example">
+        <span class="ex-label">위 5개 예시로 계산하면</span>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>질문</th><th class="num">순위</th><th class="num">1/순위</th></tr></thead>
+            <tbody>
+              <tr><td>Q1</td><td class="num">1</td><td class="num">1.00</td></tr>
+              <tr><td>Q2</td><td class="num">4</td><td class="num">0.25</td></tr>
+              <tr><td>Q3</td><td class="num">2</td><td class="num">0.50</td></tr>
+              <tr><td>Q4</td><td class="num miss">not found</td><td class="num">0.00</td></tr>
+              <tr><td>Q5</td><td class="num">1</td><td class="num">1.00</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>평균 = (1.00 + 0.25 + 0.50 + 0.00 + 1.00) / 5 = <b>MRR 0.55</b></p>
+        <p class="real">실제 300개 결과 → e5 MRR@20 = <span class="mono">0.6024</span>, bge-m3 = <span class="mono">0.6055</span> (사실상 동률)</p>
+      </div>
+    </section>
+
+    <section class="term" id="notfound">
+      <div class="term-head"><span class="term-no">④</span><h2>Not found rate<span class="en">미발견율</span></h2></div>
+      <div class="def">
+        검색 후보를 상위 20개(<span class="mono">TOP_K=20</span>)까지 확인했는데도 <b>정답 청크가 아예 없었던 비율</b>이에요.
+        위 rank 예시의 "-"가 여기 해당합니다. 이 값이 높다는 건 top-k를 아무리 늘려도 어차피 못 찾는다는 뜻이라,
+        임베딩 모델을 바꾸는 것보다 청킹 방식이나 쿼리 전처리를 점검해야 할 신호예요.
+      </div>
+    </section>
+
+    <section class="term" id="latency">
+      <div class="term-head"><span class="term-no">⑤</span><h2>평균 쿼리 지연시간<span class="en">avg_query_ms</span></h2></div>
+      <div class="def">
+        질문 하나를 <b>임베딩 벡터로 변환</b>하고 <b>DB에서 유사도 검색</b>까지 마치는 데 걸린 평균 시간(ms)이에요.
+        e5는 <span class="mono">query:</span> 프리픽스를 붙이는 등 모델마다 계산량이 달라서, 검색 정확도뿐 아니라
+        실서비스 응답 속도를 비교할 때도 참고하는 지표입니다.
+      </div>
+    </section>
+
+    <section class="term" id="sample">
+      <div class="term-head"><span class="term-no">⑥</span><h2>샘플 수 · seed<span class="en">n / random seed</span></h2></div>
+      <div class="def">
+        <b>n=300</b>은 이번에 평가에 사용한 질문 개수예요. 전체 데이터 중 무작위로 뽑는데, 이때 <b>seed=42</b>라는
+        고정값을 써서 "무작위"이지만 다음에 똑같이 실행해도 <b>같은 300개</b>가 뽑히게 만들어요.
+        이렇게 해야 나중에 모델이나 청킹 방식을 바꾼 뒤 다시 돌렸을 때, 표본이 달라져서 생기는 차이가 아니라
+        진짜 변경 때문에 생긴 차이인지 비교할 수 있습니다.
+      </div>
+    </section>
+
+    <footer>companion to docs/reports/retrieval-eval-2026-08-18.html · 일회성 참고 문서 · rag-demo</footer>
+  </div>
+</div>
