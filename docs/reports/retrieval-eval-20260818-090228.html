@@ -1,208 +1,4 @@
-import argparse
-import json
-from datetime import datetime, timezone
-from pathlib import Path
-from string import Template
-
-REPORTS_DIR = Path(__file__).resolve().parents[2] / "docs" / "reports"
-RUNS_DIR = Path(__file__).resolve().parents[2] / "docs" / "eval-runs"
-
-MODEL_LABELS = {
-    "e5": "e5",
-    "bge_m3": "bge-m3",
-    "qwen3_embed": "Qwen3-Embed",
-    "pplx_embed": "pplx-embed",
-}
-MODEL_COLORS = {
-    "e5": {"light": "#2a78d6", "dark": "#3987e5"},
-    "bge_m3": {"light": "#eb6834", "dark": "#d95926"},
-    "qwen3_embed": {"light": "#1baf7a", "dark": "#199e70"},
-    "pplx_embed": {"light": "#eda100", "dark": "#c98500"},
-}
-FALLBACK_COLOR = {"light": "#6b6b68", "dark": "#9a9a95"}
-
-HIGHER_IS_BETTER = {"not_found_rate": False, "avg_query_ms": False}
-
-
-def _label(model_key: str) -> str:
-    return MODEL_LABELS.get(model_key, model_key)
-
-
-def _color(model_key: str, mode: str) -> str:
-    return MODEL_COLORS.get(model_key, FALLBACK_COLOR)[mode]
-
-
-def _metric_keys(results: list[dict]) -> tuple[list[str], list[str], list[str]]:
-    sample = results[0]
-    recall_keys = sorted(
-        (k for k in sample if k.startswith("recall@")),
-        key=lambda k: int(k.split("@")[1]),
-    )
-    mrr_keys = [k for k in sample if k.startswith("mrr@")]
-    other_keys = [k for k in sample if k not in {"model", "n", *recall_keys, *mrr_keys}]
-    return recall_keys, mrr_keys, other_keys
-
-
-METRIC_LABELS = {"not_found_rate": "Not found rate", "avg_query_ms": "Avg query latency"}
-
-
-def _metric_label(key: str) -> str:
-    if key in METRIC_LABELS:
-        return METRIC_LABELS[key]
-    if key.startswith("recall@"):
-        return f"Recall@{key.split('@')[1]}"
-    if key.startswith("mrr@"):
-        return f"MRR@{key.split('@')[1]}"
-    return key
-
-
-def _fmt(key: str, value: float) -> str:
-    if key.startswith("recall@") or key == "not_found_rate":
-        return f"{value * 100:.2f}%"
-    if key.startswith("mrr@"):
-        return f"{value:.4f}"
-    if key == "avg_query_ms":
-        return f"{value:.1f}ms"
-    return f"{value}"
-
-
-def _winner(results: list[dict], key: str) -> str:
-    higher_is_better = HIGHER_IS_BETTER.get(key, True)
-    pick = max if higher_is_better else min
-    best = pick(results, key=lambda r: r[key])
-    return best["model"]
-
-
-def _metric_row(results: list[dict], key: str) -> str:
-    cells = "".join(f'<td class="num tnum">{_fmt(key, r[key])}</td>' for r in results)
-    winner = _winner(results, key)
-    delta_cell = ""
-    if len(results) == 2:
-        delta = abs(results[0][key] - results[1][key])
-        delta_cell = f'<td class="num tnum">{_fmt(key, delta)}</td>'
-    return (
-        f"<tr><td>{_metric_label(key)}</td>{cells}{delta_cell}"
-        f'<td><span class="winner"><span class="dot" style="background:{_color(winner, "light")}"></span>'
-        f"{_label(winner)}</span></td></tr>"
-    )
-
-
-def _stat_tile(results: list[dict], key: str, label: str) -> str:
-    higher_is_better = HIGHER_IS_BETTER.get(key, True)
-    ordered = sorted(results, key=lambda r: r[key], reverse=higher_is_better)
-    best, rest = ordered[0], ordered[1:]
-    rest_str = " · ".join(f"{_label(r['model'])} {_fmt(key, r[key])}" for r in rest)
-    return f"""
-        <div class="stat">
-          <span class="label">{label}</span>
-          <span class="value tnum"><span class="win" style="color:{_color(best['model'], 'light')}">{_fmt(key, best[key])}</span><span class="lose">{_label(best['model'])}</span></span>
-          <span class="foot">{rest_str}</span>
-        </div>"""
-
-
-BACKGROUND_NOTE = (
-    "모든 모델은 동일한 청킹 설정(고정 크기 토큰 청킹, chunk_max_tokens/overlap 동일)과 "
-    "동일한 corpus로 적재한 뒤 비교합니다. 청킹 전략 자체를 바꾸는 실험은 이 비교와 분리해서 "
-    "진행합니다 — 그래야 성능 차이가 모델 때문인지 청킹 때문인지 뒤섞이지 않습니다. "
-    "채점은 doc-level relevance(같은 문서의 모든 청크를 정답으로 인정) 기준이며, 질의 샘플은 "
-    "고정 시드로 뽑아 재실행해도 같은 질의 셋으로 재현됩니다."
-)
-
-
-def _insight_note(results: list[dict], recall_keys: list[str]) -> str:
-    if not results or not recall_keys:
-        return ""
-
-    top_recall_key = recall_keys[0]
-    best_recall = max(results, key=lambda r: r[top_recall_key])
-    best_not_found = min(results, key=lambda r: r["not_found_rate"])
-    fastest = min(results, key=lambda r: r["avg_query_ms"])
-    slowest = max(results, key=lambda r: r["avg_query_ms"])
-
-    sentences = [
-        f"{_metric_label(top_recall_key)} 기준 가장 높은 모델은 <strong>{_label(best_recall['model'])}</strong>"
-        f"({_fmt(top_recall_key, best_recall[top_recall_key])})이고, "
-        f"검색 실패율(not found)이 가장 낮은 모델은 <strong>{_label(best_not_found['model'])}</strong>"
-        f"({_fmt('not_found_rate', best_not_found['not_found_rate'])})입니다."
-    ]
-
-    if slowest["model"] != fastest["model"] and fastest["avg_query_ms"] > 0:
-        latency_ratio = slowest["avg_query_ms"] / fastest["avg_query_ms"]
-        if latency_ratio >= 1.5:
-            sentences.append(
-                f"다만 쿼리 지연시간은 <strong>{_label(slowest['model'])}</strong>가 "
-                f"{_fmt('avg_query_ms', slowest['avg_query_ms'])}로, 가장 빠른 "
-                f"<strong>{_label(fastest['model'])}</strong>({_fmt('avg_query_ms', fastest['avg_query_ms'])}) "
-                f"대비 약 {latency_ratio:.1f}배 느립니다 — 품질과 지연시간을 함께 고려해야 합니다."
-            )
-
-    return " ".join(sentences)
-
-
-def render_html(run: dict) -> str:
-    results = run["results"]
-    recall_keys, mrr_keys, other_keys = _metric_keys(results)
-
-    n = run.get("n_samples")
-    seed = run.get("seed")
-    run_at = run.get("run_at", "")
-    run_date = run_at.split("T")[0] if "T" in run_at else run_at
-    model_names = ", ".join(_label(r["model"]) for r in results)
-
-    stat_tiles = "".join(
-        [
-            _stat_tile(results, recall_keys[0], _metric_label(recall_keys[0])) if recall_keys else "",
-            _stat_tile(results, recall_keys[-1], _metric_label(recall_keys[-1])) if recall_keys else "",
-            _stat_tile(results, "avg_query_ms", "평균 쿼리 지연") if "avg_query_ms" in other_keys else "",
-        ]
-    )
-
-    metric_rows = "".join(
-        _metric_row(results, k) for k in [*recall_keys, *mrr_keys, *other_keys]
-    )
-
-    legend = "".join(
-        f'<span class="item"><span class="swatch" style="background:{_color(r["model"], "light")}"></span>{_label(r["model"])}</span>'
-        for r in results
-    )
-
-    metric_header = "".join(f'<th class="num">{_label(r["model"])}</th>' for r in results)
-    delta_header = '<th class="num">차이(Δ)</th>' if len(results) == 2 else ""
-    insight_note = _insight_note(results, recall_keys)
-
-    chart_data = {
-        "categories": recall_keys,
-        "series": [
-            {
-                "key": r["model"],
-                "label": _label(r["model"]),
-                "colorLight": _color(r["model"], "light"),
-                "colorDark": _color(r["model"], "dark"),
-                "values": [r[k] for k in recall_keys],
-            }
-            for r in results
-        ],
-    }
-
-    template = Template(HTML_TEMPLATE)
-    return template.substitute(
-        run_at=run_at,
-        run_date=run_date,
-        n=n,
-        seed=seed,
-        model_names=model_names,
-        stat_tiles=stat_tiles,
-        legend=legend,
-        metric_header=metric_header,
-        delta_header=delta_header,
-        metric_rows=metric_rows,
-        background_note=BACKGROUND_NOTE,
-        insight_note=insight_note,
-        chart_data_json=json.dumps(chart_data, ensure_ascii=False),
-    )
-
-
-HTML_TEMPLATE = """<title>Retrieval Eval $run_date</title>
+<title>Retrieval Eval 2026-08-18</title>
 <style>
   .re {
     color-scheme: light;
@@ -291,22 +87,37 @@ HTML_TEMPLATE = """<title>Retrieval Eval $run_date</title>
     <header>
       <div class="eyebrow">RAG retrieval eval · auto-generated</div>
       <h1>Retrieval 평가 리포트</h1>
-      <p class="sub">$model_names 임베딩 테이블에 동일 질의 셋을 던져 Recall@k · MRR · 검색 지연시간을 측정한 자동 생성 리포트입니다.</p>
+      <p class="sub">e5, bge-m3, Qwen3-Embed, pplx-embed 임베딩 테이블에 동일 질의 셋을 던져 Recall@k · MRR · 검색 지연시간을 측정한 자동 생성 리포트입니다.</p>
       <div class="meta">
-        <span>run_at · $run_at</span>
-        <span>samples · $n</span>
-        <span>seed · $seed</span>
+        <span>run_at · 2026-08-18T09:02:28.491140+00:00</span>
+        <span>samples · 300</span>
+        <span>seed · 42</span>
       </div>
     </header>
 
     <section>
-      <div class="stats">$stat_tiles</div>
+      <div class="stats">
+        <div class="stat">
+          <span class="label">Recall@1</span>
+          <span class="value tnum"><span class="win" style="color:#eda100">79.33%</span><span class="lose">pplx-embed</span></span>
+          <span class="foot">Qwen3-Embed 72.67% · bge-m3 70.67% · e5 66.33%</span>
+        </div>
+        <div class="stat">
+          <span class="label">Recall@10</span>
+          <span class="value tnum"><span class="win" style="color:#eda100">94.33%</span><span class="lose">pplx-embed</span></span>
+          <span class="foot">Qwen3-Embed 90.67% · e5 84.33% · bge-m3 83.67%</span>
+        </div>
+        <div class="stat">
+          <span class="label">평균 쿼리 지연</span>
+          <span class="value tnum"><span class="win" style="color:#2a78d6">69.2ms</span><span class="lose">e5</span></span>
+          <span class="foot">bge-m3 98.6ms · Qwen3-Embed 99.2ms · pplx-embed 476.8ms</span>
+        </div></div>
     </section>
 
     <section>
       <div class="section-title">
         <h2>Recall@k 비교</h2>
-        <div class="legend">$legend</div>
+        <div class="legend"><span class="item"><span class="swatch" style="background:#2a78d6"></span>e5</span><span class="item"><span class="swatch" style="background:#eb6834"></span>bge-m3</span><span class="item"><span class="swatch" style="background:#1baf7a"></span>Qwen3-Embed</span><span class="item"><span class="swatch" style="background:#eda100"></span>pplx-embed</span></div>
       </div>
       <div class="chart-card">
         <div class="chart-inner">
@@ -319,20 +130,20 @@ HTML_TEMPLATE = """<title>Retrieval Eval $run_date</title>
       <h2>상세 지표</h2>
       <div class="table-scroll">
         <table>
-          <thead><tr><th>지표</th>$metric_header$delta_header<th>우세</th></tr></thead>
-          <tbody>$metric_rows</tbody>
+          <thead><tr><th>지표</th><th class="num">e5</th><th class="num">bge-m3</th><th class="num">Qwen3-Embed</th><th class="num">pplx-embed</th><th>우세</th></tr></thead>
+          <tbody><tr><td>Recall@1</td><td class="num tnum">66.33%</td><td class="num tnum">70.67%</td><td class="num tnum">72.67%</td><td class="num tnum">79.33%</td><td><span class="winner"><span class="dot" style="background:#eda100"></span>pplx-embed</span></td></tr><tr><td>Recall@3</td><td class="num tnum">77.33%</td><td class="num tnum">79.67%</td><td class="num tnum">83.67%</td><td class="num tnum">88.33%</td><td><span class="winner"><span class="dot" style="background:#eda100"></span>pplx-embed</span></td></tr><tr><td>Recall@5</td><td class="num tnum">81.33%</td><td class="num tnum">82.00%</td><td class="num tnum">86.67%</td><td class="num tnum">91.33%</td><td><span class="winner"><span class="dot" style="background:#eda100"></span>pplx-embed</span></td></tr><tr><td>Recall@10</td><td class="num tnum">84.33%</td><td class="num tnum">83.67%</td><td class="num tnum">90.67%</td><td class="num tnum">94.33%</td><td><span class="winner"><span class="dot" style="background:#eda100"></span>pplx-embed</span></td></tr><tr><td>MRR@20</td><td class="num tnum">0.7288</td><td class="num tnum">0.7565</td><td class="num tnum">0.7895</td><td class="num tnum">0.8472</td><td><span class="winner"><span class="dot" style="background:#eda100"></span>pplx-embed</span></td></tr><tr><td>Not found rate</td><td class="num tnum">12.67%</td><td class="num tnum">16.00%</td><td class="num tnum">7.00%</td><td class="num tnum">3.33%</td><td><span class="winner"><span class="dot" style="background:#eda100"></span>pplx-embed</span></td></tr><tr><td>Avg query latency</td><td class="num tnum">69.2ms</td><td class="num tnum">98.6ms</td><td class="num tnum">99.2ms</td><td class="num tnum">476.8ms</td><td><span class="winner"><span class="dot" style="background:#2a78d6"></span>e5</span></td></tr></tbody>
         </table>
       </div>
     </section>
 
     <section>
       <h2>왜 이렇게 비교했나</h2>
-      <div class="note-card">$background_note</div>
+      <div class="note-card">모든 모델은 동일한 청킹 설정(고정 크기 토큰 청킹, chunk_max_tokens/overlap 동일)과 동일한 corpus로 적재한 뒤 비교합니다. 청킹 전략 자체를 바꾸는 실험은 이 비교와 분리해서 진행합니다 — 그래야 성능 차이가 모델 때문인지 청킹 때문인지 뒤섞이지 않습니다. 채점은 doc-level relevance(같은 문서의 모든 청크를 정답으로 인정) 기준이며, 질의 샘플은 고정 시드로 뽑아 재실행해도 같은 질의 셋으로 재현됩니다.</div>
     </section>
 
     <section>
       <h2>결과 요약</h2>
-      <div class="note-card">$insight_note</div>
+      <div class="note-card">Recall@1 기준 가장 높은 모델은 <strong>pplx-embed</strong>(79.33%)이고, 검색 실패율(not found)이 가장 낮은 모델은 <strong>pplx-embed</strong>(3.33%)입니다. 다만 쿼리 지연시간은 <strong>pplx-embed</strong>가 476.8ms로, 가장 빠른 <strong>e5</strong>(69.2ms) 대비 약 6.9배 느립니다 — 품질과 지연시간을 함께 고려해야 합니다.</div>
     </section>
 
     <footer>generated via rag_demo.report · rag-demo</footer>
@@ -343,7 +154,7 @@ HTML_TEMPLATE = """<title>Retrieval Eval $run_date</title>
 
 <script>
 (function () {
-  var chartData = $chart_data_json;
+  var chartData = {"categories": ["recall@1", "recall@3", "recall@5", "recall@10"], "series": [{"key": "e5", "label": "e5", "colorLight": "#2a78d6", "colorDark": "#3987e5", "values": [0.6633333333333333, 0.7733333333333333, 0.8133333333333334, 0.8433333333333334]}, {"key": "bge_m3", "label": "bge-m3", "colorLight": "#eb6834", "colorDark": "#d95926", "values": [0.7066666666666667, 0.7966666666666666, 0.82, 0.8366666666666667]}, {"key": "qwen3_embed", "label": "Qwen3-Embed", "colorLight": "#1baf7a", "colorDark": "#199e70", "values": [0.7266666666666667, 0.8366666666666667, 0.8666666666666667, 0.9066666666666666]}, {"key": "pplx_embed", "label": "pplx-embed", "colorLight": "#eda100", "colorDark": "#c98500", "values": [0.7933333333333333, 0.8833333333333333, 0.9133333333333333, 0.9433333333333334]}]};
   var svg = document.getElementById("chart");
   var ns = "http://www.w3.org/2000/svg";
   var W = 680, H = 300;
@@ -420,34 +231,3 @@ HTML_TEMPLATE = """<title>Retrieval Eval $run_date</title>
   });
 })();
 </script>
-"""
-
-
-def _latest_run_file() -> Path:
-    files = sorted(RUNS_DIR.glob("*.json"))
-    if not files:
-        raise SystemExit(f"평가 결과 JSON이 없습니다: {RUNS_DIR}")
-    return files[-1]
-
-
-def generate_report(run: dict, run_id: str) -> Path:
-    REPORTS_DIR.mkdir(parents=True, exist_ok=True)
-    html = render_html(run)
-    out_path = REPORTS_DIR / f"retrieval-eval-{run_id}.html"
-    out_path.write_text(html, encoding="utf-8")
-    return out_path
-
-
-def main() -> None:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--run", type=Path, default=None, help="평가 결과 JSON 경로 (기본: 최신 실행)")
-    args = parser.parse_args()
-
-    run_file = args.run or _latest_run_file()
-    run = json.loads(run_file.read_text(encoding="utf-8"))
-    out_path = generate_report(run, run_file.stem)
-    print(f"report: {out_path}")
-
-
-if __name__ == "__main__":
-    main()

@@ -51,6 +51,11 @@ def _sample_queries(n: int, seed: int) -> tuple[list[dict], int]:
     청크 행을 그대로 무작위 추출하면 같은 질문이 여러 번 뽑히거나 특정 chunk_index로
     치우칠 수 있다. doc_id 단위로 먼저 중복 제거한 뒤 샘플링한다.
 
+    모델별로 적재된 corpus 크기가 다를 수 있으므로(예: 일부 모델은 샘플링 적재),
+    등록된 모든 모델 테이블에 공통으로 존재하는 doc_id만 평가 대상으로 삼는다.
+    그렇지 않으면 corpus가 작은 모델은 정답 doc이 애초에 테이블에 없어 recall이
+    부당하게 0에 가깝게 나온다.
+
     반환값: (샘플 목록, 잡음으로 제외된 개수)
     """
     with get_connection() as conn:
@@ -63,7 +68,14 @@ def _sample_queries(n: int, seed: int) -> tuple[list[dict], int]:
             """
         ).fetchall()
 
-    candidates = [{"doc_id": r[0], "question": r[1]} for r in rows]
+        common_doc_ids: set[str] | None = None
+        for config in EMBEDDING_MODELS.values():
+            table_doc_ids = {
+                r[0] for r in conn.execute(f"SELECT DISTINCT doc_id FROM {config.table_name}").fetchall()
+            }
+            common_doc_ids = table_doc_ids if common_doc_ids is None else common_doc_ids & table_doc_ids
+
+    candidates = [{"doc_id": r[0], "question": r[1]} for r in rows if r[0] in (common_doc_ids or set())]
     valid = [c for c in candidates if not _is_junk_question(c["question"])]
     filtered_count = len(candidates) - len(valid)
 

@@ -1,0 +1,221 @@
+<title>Retrieval Eval 2026-08-18</title>
+<style>
+  .re {
+    color-scheme: light;
+    --page:        #f9f9f7;
+    --surface:     #fcfcfb;
+    --surface-2:   #f3f2ee;
+    --text-1:      #0b0b0b;
+    --text-2:      #52514e;
+    --muted:       #898781;
+    --grid:        #e1e0d9;
+    --border:      rgba(11,11,11,0.10);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) .re {
+      color-scheme: dark;
+      --page:        #0d0d0d;
+      --surface:     #1a1a19;
+      --surface-2:   #202020;
+      --text-1:      #ffffff;
+      --text-2:      #c3c2b7;
+      --muted:       #898781;
+      --grid:        #2c2c2a;
+      --border:      rgba(255,255,255,0.10);
+    }
+  }
+  :root[data-theme="dark"] .re {
+    color-scheme: dark;
+    --page:        #0d0d0d;
+    --surface:     #1a1a19;
+    --surface-2:   #202020;
+    --text-1:      #ffffff;
+    --text-2:      #c3c2b7;
+    --muted:       #898781;
+    --grid:        #2c2c2a;
+    --border:      rgba(255,255,255,0.10);
+  }
+  .re { background: var(--page); color: var(--text-1); font-family: system-ui, -apple-system, "Segoe UI", "Malgun Gothic", sans-serif; padding: 56px 24px 80px; box-sizing: border-box; }
+  .re * { box-sizing: border-box; }
+  .re .wrap { max-width: 860px; margin: 0 auto; display: flex; flex-direction: column; gap: 40px; }
+  .re .mono { font-family: ui-monospace, "SFMono-Regular", "Consolas", "Cascadia Code", monospace; }
+  .re .tnum { font-variant-numeric: tabular-nums; }
+  .re header { display: flex; flex-direction: column; gap: 10px; border-bottom: 1px solid var(--border); padding-bottom: 28px; }
+  .re .eyebrow { font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-2); font-family: ui-monospace, monospace; }
+  .re h1 { font-size: 26px; line-height: 1.25; font-weight: 800; margin: 0; letter-spacing: -0.01em; }
+  .re .sub { font-size: 14px; color: var(--text-2); margin: 0; max-width: 66ch; line-height: 1.55; }
+  .re .meta { display: flex; gap: 18px; flex-wrap: wrap; font-size: 12.5px; color: var(--muted); font-family: ui-monospace, monospace; }
+  .re section { display: flex; flex-direction: column; gap: 16px; }
+  .re .section-title { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .re h2 { font-size: 13px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-1); margin: 0; }
+  .re .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .re .stat { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; display: flex; flex-direction: column; gap: 6px; }
+  .re .stat .label { font-size: 11.5px; color: var(--muted); font-weight: 600; letter-spacing: 0.02em; }
+  .re .stat .value { font-size: 24px; font-weight: 800; line-height: 1; display: flex; align-items: baseline; gap: 8px; }
+  .re .stat .value .lose { font-size: 13px; font-weight: 600; color: var(--muted); }
+  .re .stat .foot { font-size: 12px; color: var(--text-2); }
+  .re .legend { display: flex; gap: 16px; font-size: 12.5px; color: var(--text-2); }
+  .re .legend .item { display: flex; align-items: center; gap: 6px; }
+  .re .legend .swatch { width: 10px; height: 10px; border-radius: 2px; }
+  .re .chart-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px 20px 8px; overflow-x: auto; }
+  .re .chart-inner { min-width: 560px; }
+  .re svg text { font-family: ui-monospace, monospace; fill: var(--muted); }
+  .re .bar { cursor: pointer; transition: opacity 0.12s ease; }
+  .re .bar:hover { opacity: 0.82; }
+  .re .cat-label { font-size: 11.5px; fill: var(--text-2); font-family: system-ui, -apple-system, "Malgun Gothic", sans-serif; }
+  .re .axis-label { font-size: 10.5px; }
+  .re .val-label { font-size: 10px; font-weight: 600; }
+  .re .gridline { stroke: var(--grid); stroke-width: 1; }
+  .re .baseline { stroke: var(--muted); stroke-width: 1; }
+  .re #tooltip { position: absolute; pointer-events: none; opacity: 0; transition: opacity 0.1s ease; background: var(--text-1); color: var(--page); font-size: 12px; font-family: ui-monospace, monospace; padding: 6px 9px; border-radius: 6px; white-space: nowrap; z-index: 5; transform: translate(-50%, -100%); }
+  .re .table-scroll { overflow-x: auto; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+  .re table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 560px; }
+  .re th { text-align: left; font-size: 11px; letter-spacing: 0.03em; text-transform: uppercase; color: var(--muted); font-weight: 600; padding: 10px 14px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  .re td { padding: 11px 14px; border-bottom: 1px solid var(--border); color: var(--text-1); white-space: nowrap; }
+  .re tr:last-child td { border-bottom: none; }
+  .re td.num { text-align: right; }
+  .re .winner { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 700; }
+  .re .dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+  .re footer { font-size: 11.5px; color: var(--muted); font-family: ui-monospace, monospace; padding-top: 8px; border-top: 1px solid var(--border); }
+  @media (max-width: 640px) { .re .stats { grid-template-columns: 1fr; } }
+</style>
+
+<div class="re">
+  <div class="wrap">
+    <header>
+      <div class="eyebrow">RAG retrieval eval · auto-generated</div>
+      <h1>Retrieval 평가 리포트</h1>
+      <p class="sub">e5, bge-m3, Qwen3-Embed, pplx-embed 임베딩 테이블에 동일 질의 셋을 던져 Recall@k · MRR · 검색 지연시간을 측정한 자동 생성 리포트입니다.</p>
+      <div class="meta">
+        <span>run_at · 2026-08-18T09:02:28.491140+00:00</span>
+        <span>samples · 300</span>
+        <span>seed · 42</span>
+      </div>
+    </header>
+
+    <section>
+      <div class="stats">
+        <div class="stat">
+          <span class="label">Recall@1</span>
+          <span class="value tnum"><span class="win" style="color:#eda100">79.33%</span><span class="lose">pplx-embed</span></span>
+          <span class="foot">Qwen3-Embed 72.67% · bge-m3 70.67% · e5 66.33%</span>
+        </div>
+        <div class="stat">
+          <span class="label">Recall@10</span>
+          <span class="value tnum"><span class="win" style="color:#eda100">94.33%</span><span class="lose">pplx-embed</span></span>
+          <span class="foot">Qwen3-Embed 90.67% · e5 84.33% · bge-m3 83.67%</span>
+        </div>
+        <div class="stat">
+          <span class="label">평균 쿼리 지연</span>
+          <span class="value tnum"><span class="win" style="color:#2a78d6">69.2ms</span><span class="lose">e5</span></span>
+          <span class="foot">bge-m3 98.6ms · Qwen3-Embed 99.2ms · pplx-embed 476.8ms</span>
+        </div></div>
+    </section>
+
+    <section>
+      <div class="section-title">
+        <h2>Recall@k 비교</h2>
+        <div class="legend"><span class="item"><span class="swatch" style="background:#2a78d6"></span>e5</span><span class="item"><span class="swatch" style="background:#eb6834"></span>bge-m3</span><span class="item"><span class="swatch" style="background:#1baf7a"></span>Qwen3-Embed</span><span class="item"><span class="swatch" style="background:#eda100"></span>pplx-embed</span></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-inner">
+          <svg id="chart" width="100%" viewBox="0 0 680 300" role="img" aria-label="Recall@k 비교 막대그래프"></svg>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>상세 지표</h2>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>지표</th><th class="num">e5</th><th class="num">bge-m3</th><th class="num">Qwen3-Embed</th><th class="num">pplx-embed</th><th>우세</th></tr></thead>
+          <tbody><tr><td>Recall@1</td><td class="num tnum">66.33%</td><td class="num tnum">70.67%</td><td class="num tnum">72.67%</td><td class="num tnum">79.33%</td><td><span class="winner"><span class="dot" style="background:#eda100"></span>pplx-embed</span></td></tr><tr><td>Recall@3</td><td class="num tnum">77.33%</td><td class="num tnum">79.67%</td><td class="num tnum">83.67%</td><td class="num tnum">88.33%</td><td><span class="winner"><span class="dot" style="background:#eda100"></span>pplx-embed</span></td></tr><tr><td>Recall@5</td><td class="num tnum">81.33%</td><td class="num tnum">82.00%</td><td class="num tnum">86.67%</td><td class="num tnum">91.33%</td><td><span class="winner"><span class="dot" style="background:#eda100"></span>pplx-embed</span></td></tr><tr><td>Recall@10</td><td class="num tnum">84.33%</td><td class="num tnum">83.67%</td><td class="num tnum">90.67%</td><td class="num tnum">94.33%</td><td><span class="winner"><span class="dot" style="background:#eda100"></span>pplx-embed</span></td></tr><tr><td>MRR@20</td><td class="num tnum">0.7288</td><td class="num tnum">0.7565</td><td class="num tnum">0.7895</td><td class="num tnum">0.8472</td><td><span class="winner"><span class="dot" style="background:#eda100"></span>pplx-embed</span></td></tr><tr><td>Not found rate</td><td class="num tnum">12.67%</td><td class="num tnum">16.00%</td><td class="num tnum">7.00%</td><td class="num tnum">3.33%</td><td><span class="winner"><span class="dot" style="background:#eda100"></span>pplx-embed</span></td></tr><tr><td>Avg query latency</td><td class="num tnum">69.2ms</td><td class="num tnum">98.6ms</td><td class="num tnum">99.2ms</td><td class="num tnum">476.8ms</td><td><span class="winner"><span class="dot" style="background:#2a78d6"></span>e5</span></td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <footer>generated via rag_demo.report · rag-demo</footer>
+  </div>
+</div>
+
+<div id="tooltip"></div>
+
+<script>
+(function () {
+  var chartData = {"categories": ["recall@1", "recall@3", "recall@5", "recall@10"], "series": [{"key": "e5", "label": "e5", "colorLight": "#2a78d6", "colorDark": "#3987e5", "values": [0.6633333333333333, 0.7733333333333333, 0.8133333333333334, 0.8433333333333334]}, {"key": "bge_m3", "label": "bge-m3", "colorLight": "#eb6834", "colorDark": "#d95926", "values": [0.7066666666666667, 0.7966666666666666, 0.82, 0.8366666666666667]}, {"key": "qwen3_embed", "label": "Qwen3-Embed", "colorLight": "#1baf7a", "colorDark": "#199e70", "values": [0.7266666666666667, 0.8366666666666667, 0.8666666666666667, 0.9066666666666666]}, {"key": "pplx_embed", "label": "pplx-embed", "colorLight": "#eda100", "colorDark": "#c98500", "values": [0.7933333333333333, 0.8833333333333333, 0.9133333333333333, 0.9433333333333334]}]};
+  var svg = document.getElementById("chart");
+  var ns = "http://www.w3.org/2000/svg";
+  var W = 680, H = 300;
+  var plotTop = 14, plotBottom = 240, plotLeft = 40, plotRight = 20;
+  var plotH = plotBottom - plotTop;
+  var plotW = W - plotLeft - plotRight;
+  var yMax = 1.0;
+  var isDark = matchMedia("(prefers-color-scheme: dark)").matches;
+  var themeAttr = document.documentElement.getAttribute("data-theme");
+  if (themeAttr === "dark") isDark = true;
+  if (themeAttr === "light") isDark = false;
+
+  function y(v) { return plotBottom - (v / yMax) * plotH; }
+  function el(tag, attrs) {
+    var e = document.createElementNS(ns, tag);
+    for (var k in attrs) e.setAttribute(k, attrs[k]);
+    return e;
+  }
+
+  var ticks = [0, 0.2, 0.4, 0.6, 0.8, 1.0];
+  ticks.forEach(function (t) {
+    svg.appendChild(el("line", { class: "gridline", x1: plotLeft, x2: W - plotRight, y1: y(t), y2: y(t) }));
+    var lbl = el("text", { class: "axis-label", x: plotLeft - 8, y: y(t) + 3, "text-anchor": "end" });
+    lbl.textContent = Math.round(t * 100) + "%";
+    svg.appendChild(lbl);
+  });
+  svg.appendChild(el("line", { class: "baseline", x1: plotLeft, x2: W - plotRight, y1: plotBottom, y2: plotBottom }));
+
+  var nSeries = chartData.series.length;
+  var groupW = plotW / chartData.categories.length;
+  var gap = 6;
+  var barW = Math.min(36, (groupW * 0.7 - gap * (nSeries - 1)) / nSeries);
+
+  var tooltip = document.getElementById("tooltip");
+  var chartCard = document.querySelector(".chart-card");
+
+  function roundedTopPath(x, yTop, w, h, r) {
+    var yBot = yTop + h;
+    if (h < r) r = h;
+    return "M" + x + "," + (yTop + r) + " Q" + x + "," + yTop + " " + (x + r) + "," + yTop +
+      " L" + (x + w - r) + "," + yTop + " Q" + (x + w) + "," + yTop + " " + (x + w) + "," + (yTop + r) +
+      " L" + (x + w) + "," + yBot + " L" + x + "," + yBot + " Z";
+  }
+
+  function addBar(x, w, value, color, catLabel, seriesLabel) {
+    var h = (value / yMax) * plotH;
+    var top = plotBottom - h;
+    var path = el("path", { class: "bar", d: roundedTopPath(x, top, w, h, 4), fill: color });
+    svg.appendChild(path);
+    var vlbl = el("text", { class: "val-label", x: x + w / 2, y: top - 6, "text-anchor": "middle", fill: color });
+    vlbl.textContent = (value * 100).toFixed(1) + "%";
+    svg.appendChild(vlbl);
+    path.addEventListener("mousemove", function (ev) {
+      var rect = chartCard.getBoundingClientRect();
+      tooltip.style.left = (ev.clientX - rect.left + chartCard.scrollLeft) + "px";
+      tooltip.style.top = (ev.clientY - rect.top - 10) + "px";
+      tooltip.style.opacity = 1;
+      tooltip.textContent = catLabel + " · " + seriesLabel + " · " + (value * 100).toFixed(2) + "%";
+    });
+    path.addEventListener("mouseleave", function () { tooltip.style.opacity = 0; });
+  }
+
+  chartData.categories.forEach(function (cat, ci) {
+    var gx = plotLeft + ci * groupW;
+    var pairW = barW * nSeries + gap * (nSeries - 1);
+    var startX = gx + (groupW - pairW) / 2;
+    chartData.series.forEach(function (s, si) {
+      var color = isDark ? s.colorDark : s.colorLight;
+      addBar(startX + si * (barW + gap), barW, s.values[ci], color, cat, s.label);
+    });
+    var lbl = el("text", { class: "cat-label", x: gx + groupW / 2, y: plotBottom + 22, "text-anchor": "middle" });
+    lbl.textContent = cat;
+    svg.appendChild(lbl);
+  });
+})();
+</script>

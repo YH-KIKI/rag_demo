@@ -1,5 +1,6 @@
 import argparse
 import logging
+import random
 import sys
 
 from datasets import load_dataset
@@ -39,6 +40,10 @@ def _insert_batch(conn, rows: list[dict], model_key: str) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", choices=list(EMBEDDING_MODELS), default="e5")
+    parser.add_argument(
+        "--limit", type=int, default=None, help="무작위 샘플링할 행 수 (미지정 시 전체 적재)"
+    )
+    parser.add_argument("--seed", type=int, default=42, help="--limit 샘플링 시드")
     args = parser.parse_args()
     model_key = args.model
 
@@ -60,12 +65,19 @@ def main() -> None:
         )
         sys.exit(1)
 
+    original_indices = list(range(len(dataset)))
+    if args.limit is not None and args.limit < len(dataset):
+        original_indices = sorted(random.Random(args.seed).sample(original_indices, args.limit))
+        dataset = dataset.select(original_indices)
+        logger.info("샘플링된 %d행 적재 (seed=%d)", len(original_indices), args.seed)
+
     conn = get_connection()
     pending_rows: list[dict] = []
     total_chunks = 0
 
     try:
-        for row_index, row in enumerate(dataset):
+        for pos, row in enumerate(dataset):
+            row_index = original_indices[pos]
             text = row.get(text_column)
             if not text:
                 continue

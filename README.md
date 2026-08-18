@@ -17,16 +17,18 @@ uv sync                  # .venv 생성 + 의존성 설치
 Copy-Item .env.example .env
 # .env에서 DATABASE_URL, HF_DATASET_PATH, HF_DATASET_TEXT_COLUMN 등을 채운다
 
-uv run python -m rag_demo.ingest               # e5(기본) 임베딩으로 청킹 + 적재 (스키마도 자동 생성)
-uv run python -m rag_demo.ingest --model bge_m3 # bge-m3 임베딩으로도 적재 (비교용, 별도 테이블)
+uv run python -m rag_demo.ingest                     # e5(기본) 임베딩으로 청킹 + 적재 (스키마도 자동 생성)
+uv run python -m rag_demo.ingest --model bge_m3       # bge-m3 임베딩으로도 적재 (비교용, 별도 테이블)
+uv run python -m rag_demo.ingest --model qwen3_embed  # Qwen3-Embedding-0.6B로도 적재
+uv run python -m rag_demo.ingest --model pplx_embed   # pplx-embed-v1-0.6B로도 적재 (trust_remote_code 필요)
 uv run uvicorn rag_demo.main:app --reload
 ```
 
 - API: http://127.0.0.1:8000
 - 문서: http://127.0.0.1:8000/docs
-- `POST /search` — `{"query": "...", "top_k": 5, "model": "e5"}` 로 유사도 검색만 수행 (`model`은 `e5` | `bge_m3`)
+- `POST /search` — `{"query": "...", "top_k": 5, "model": "e5"}` 로 유사도 검색만 수행 (`model`은 `e5` | `bge_m3` | `qwen3_embed` | `pplx_embed`)
 - `POST /ask` — 위와 동일한 요청으로 검색 + OpenAI 답변 생성까지 수행
-- `POST /compare` — `{"query": "...", "top_k": 5}` 로 e5와 bge-m3 결과를 한 번에 비교 반환 (`results: [{model, answer, sources}, ...]`)
+- `POST /compare` — `{"query": "...", "top_k": 5}` 로 등록된 모든 임베딩 모델 결과를 한 번에 비교 반환 (`results: [{model, answer, sources}, ...]`)
 
 ### 프론트엔드 (검색 데모 화면)
 
@@ -40,7 +42,7 @@ npm run dev
 
 - 데모 화면: http://localhost:3000
 - API 주소는 `frontend/.env.local`의 `NEXT_PUBLIC_API_BASE_URL`로 설정 (기본값 `http://127.0.0.1:8000`)
-- `/compare`를 호출해서 e5 / bge-m3 결과를 한 화면에 나란히 보여줌
+- `/ask`를 4개 모델(e5 / bge-m3 / Qwen3-Embed / pplx-embed) 각각에 대해 호출해서 결과를 나란히 보여줌
 
 ## 의존성 관리
 
@@ -57,7 +59,7 @@ uv sync                     # uv.lock 기준으로 환경 동기화
 src/rag_demo/
 ├─ __init__.py
 ├─ config.py         # pydantic-settings 기반 설정 (.env 로딩)
-├─ model_registry.py # 임베딩 모델(e5, bge-m3) 메타데이터: 모델명/차원/프리픽스/테이블명
+├─ model_registry.py # 임베딩 모델(e5, bge-m3, Qwen3-Embed, pplx-embed) 메타데이터: 모델명/차원/프리픽스/테이블명
 ├─ db.py             # pgvector 커넥션 + 모델별 스키마 초기화
 ├─ chunking.py       # e5 토크나이저 기반 토큰 단위 청킹 (512 토큰 한도 대응)
 ├─ embeddings.py     # 모델별 임베딩 (passage/query 프리픽스 처리)

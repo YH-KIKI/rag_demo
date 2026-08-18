@@ -9,6 +9,7 @@ class EmbeddingModelConfig:
     query_prefix: str
     passage_prefix: str
     table_name: str
+    trust_remote_code: bool = False
 
 
 EMBEDDING_MODELS: dict[str, EmbeddingModelConfig] = {
@@ -27,5 +28,25 @@ EMBEDDING_MODELS: dict[str, EmbeddingModelConfig] = {
         query_prefix="",
         passage_prefix="",
         table_name="document_chunks_bge_m3",
+    ),
+    "qwen3_embed": EmbeddingModelConfig(
+        key="qwen3_embed",
+        model_name="Qwen/Qwen3-Embedding-0.6B",
+        dim=1024,
+        query_prefix=(
+            "Instruct: Given a web search query, retrieve relevant passages "
+            "that answer the query\nQuery: "
+        ),
+        passage_prefix="",
+        table_name="document_chunks_qwen3_embed",
+    ),
+    "pplx_embed": EmbeddingModelConfig(
+        key="pplx_embed",
+        model_name="perplexity-ai/pplx-embed-v1-0.6B",
+        dim=1024,
+        query_prefix="",
+        passage_prefix="",
+        table_name="document_chunks_pplx_embed",
+        trust_remote_code=True,
     ),
 }

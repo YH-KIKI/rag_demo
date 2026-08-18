@@ -33,7 +33,7 @@ async def health() -> dict[str, str]:
 class SearchRequest(BaseModel):
     query: str
     top_k: int = 5
-    model: Literal["e5", "bge_m3"] = "e5"
+    model: Literal["e5", "bge_m3", "qwen3_embed", "pplx_embed"] = "e5"
 
 
 class SearchResult(BaseModel):

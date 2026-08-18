@@ -49,7 +49,7 @@ function SearchColumn({
   model,
   label,
 }: {
-  model: "e5" | "bge_m3";
+  model: "e5" | "bge_m3" | "qwen3_embed" | "pplx_embed";
   label: string;
 }) {
   const [query, setQuery] = useState("");
@@ -156,23 +156,22 @@ function SearchColumn({
 export default function Home() {
   return (
     <div className="flex flex-col flex-1 items-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex w-full max-w-5xl flex-col gap-6 px-6 py-16">
+      <main className="flex w-full max-w-7xl flex-col gap-6 px-6 py-16">
         <div>
           <h1 className="text-2xl font-semibold text-black dark:text-zinc-50">
             RAG 검색 데모 — 임베딩 모델 비교
           </h1>
           <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-            좌우에 각각 질문을 입력해서 e5-base와 bge-m3 검색 결과를 비교해보세요
+            같은 질문을 4개 임베딩 모델(e5-base / bge-m3 / Qwen3-Embed-0.6B / pplx-embed-0.6B)에
+            동시에 던져서 검색 결과를 비교해보세요
           </p>
         </div>
 
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-2 md:divide-x md:divide-zinc-200 dark:md:divide-zinc-800">
-          <div className="md:pr-8">
-            <SearchColumn model="e5" label="e5-base" />
-          </div>
-          <div className="md:pl-8">
-            <SearchColumn model="bge_m3" label="bge-m3" />
-          </div>
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-2 xl:grid-cols-4">
+          <SearchColumn model="e5" label="e5-base" />
+          <SearchColumn model="bge_m3" label="bge-m3" />
+          <SearchColumn model="qwen3_embed" label="Qwen3-Embed-0.6B" />
+          <SearchColumn model="pplx_embed" label="pplx-embed-0.6B" />
         </div>
       </main>
     </div>
