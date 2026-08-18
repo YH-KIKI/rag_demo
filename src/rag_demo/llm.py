@@ -1,3 +1,4 @@
+import re
 from functools import lru_cache
 
 from openai import OpenAI
@@ -40,8 +41,10 @@ SYSTEM_PROMPT = """
    어떤 정보가 부족한지 간단히 알려주세요.
 
 10. 마크다운 강조 문법을 사용하지 마세요.
-    **굵게**, *기울임*, # 제목 같은 표현을 사용하지 말고
-    일반 텍스트와 번호 목록만 사용하세요.
+    별표(*) 두 개나 한 개로 단어를 감싸는 굵게/기울임 표현, # 제목 표현을 절대 쓰지 마세요.
+    나쁜 예: "**인(P) 감소**가 중요해요" (X)
+    좋은 예: "인(P) 감소가 중요해요" (O)
+    일반 텍스트와 1. 2. 3. 번호 목록만 사용하세요.
 """
 
 TRANSLATE_SYSTEM_PROMPT = """
@@ -67,6 +70,12 @@ If the message is already in English, return it unchanged.
 @lru_cache(maxsize=1)
 def _get_client() -> OpenAI:
     return OpenAI(api_key=settings.openai_api_key)
+
+
+def _strip_markdown_emphasis(text: str) -> str:
+    """LLM이 규칙을 무시하고 굵게/기울임/제목 마크다운을 출력하는 경우를 대비한 안전망."""
+    text = re.sub(r"(?m)^#{1,6}\s*", "", text)
+    return text.replace("**", "").replace("*", "")
 
 
 def translate_query_to_english(query: str) -> str:
@@ -95,4 +104,4 @@ def generate_answer(query: str, contexts: list[str]) -> str:
             {"role": "user", "content": user_prompt},
         ],
     )
-    return response.choices[0].message.content or ""
+    return _strip_markdown_emphasis(response.choices[0].message.content or "")
